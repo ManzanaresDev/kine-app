@@ -7,15 +7,17 @@ import { CATEGORY_LABELS, CATEGORY_COLORS } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/utils'
+import { Plus } from 'lucide-react'
 
 interface ExerciseCardProps {
   exercise: Exercise
   isDragOverlay?: boolean
   onEdit?: (exercise: Exercise) => void
   onDelete?: (id: string) => void
+  onTapAdd?: (exercise: Exercise) => void
 }
 
-export function ExerciseCard({ exercise, isDragOverlay, onEdit, onDelete }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, isDragOverlay, onEdit, onDelete, onTapAdd }: ExerciseCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `exercise-${exercise.id}`,
     data: { exercise },
@@ -45,8 +47,8 @@ export function ExerciseCard({ exercise, isDragOverlay, onEdit, onDelete }: Exer
           {...listeners}
           className="flex items-start gap-2.5 flex-1 min-w-0 cursor-grab active:cursor-grabbing"
         >
-          {/* Drag handle dots */}
-          <div className="mt-0.5 flex flex-col gap-[3px] shrink-0 opacity-30 group-hover:opacity-60 transition-opacity">
+          {/* Drag handle dots — masqués sur mobile (inutiles au touch) */}
+          <div className="hidden md:flex mt-0.5 flex-col gap-[3px] shrink-0 opacity-30 group-hover:opacity-60 transition-opacity">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex gap-[3px]">
                 <div className="w-[3px] h-[3px] rounded-full bg-stone-600" />
@@ -77,26 +79,40 @@ export function ExerciseCard({ exercise, isDragOverlay, onEdit, onDelete }: Exer
         </div>
 
         {/* Actions */}
-        {(onEdit || onDelete) && (
-          <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onEdit && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(exercise) }}
-                className="w-6 h-6 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 flex items-center justify-center text-xs transition-colors"
-              >
-                ✏️
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(exercise.id) }}
-                className="w-6 h-6 rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center text-xs transition-colors"
-              >
-                🗑
-              </button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Bouton + : visible uniquement sur mobile, absent si overlay */}
+          {onTapAdd && !isDragOverlay && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onTapAdd(exercise) }}
+              className="md:hidden w-7 h-7 rounded-lg bg-teal-500 hover:bg-teal-600 active:bg-teal-700 text-white flex items-center justify-center transition-colors"
+              aria-label={`Ajouter ${exercise.name} au programme`}
+            >
+              <Plus size={15} strokeWidth={2.5} />
+            </button>
+          )}
+
+          {/* Edit / delete — inchangés */}
+          {(onEdit || onDelete) && (
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {onEdit && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit(exercise) }}
+                  className="w-6 h-6 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 flex items-center justify-center text-xs transition-colors"
+                >
+                  ✏️
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(exercise.id) }}
+                  className="w-6 h-6 rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center text-xs transition-colors"
+                >
+                  🗑
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

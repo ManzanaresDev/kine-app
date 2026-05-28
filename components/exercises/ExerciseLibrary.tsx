@@ -12,7 +12,12 @@ import { Button } from '@/components/ui/Button'
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
-export function ExerciseLibrary() {
+interface ExerciseLibraryProps {
+  /** Appelé quand l'utilisateur tape "+" sur mobile */
+  onTapAdd?: (exercise: Exercise) => void
+}
+
+export function ExerciseLibrary({ onTapAdd }: ExerciseLibraryProps) {
   const [selectedCategory, setSelectedCategory] = useState<ExerciseCategory | null>(null)
   const [search, setSearch] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -91,11 +96,17 @@ export function ExerciseLibrary() {
         />
       </div>
 
-      {/* Drag hint */}
+      {/* Hint drag (desktop) / tap (mobile) — chacun visible uniquement sur sa breakpoint */}
       <div className="shrink-0 mb-3 flex items-center gap-2 px-3 py-2 bg-teal-50 border border-teal-100 rounded-xl">
-        <span className="text-base">👈</span>
-        <p className="text-xs text-teal-700">
+        {/* Desktop */}
+        <span className="hidden md:inline text-base">👈</span>
+        <p className="hidden md:block text-xs text-teal-700">
           Glissez un exercice vers le programme à droite
+        </p>
+        {/* Mobile */}
+        <span className="md:hidden text-base">👆</span>
+        <p className="md:hidden text-xs text-teal-700">
+          Appuyez sur <span className="font-semibold">+</span> pour ajouter au programme
         </p>
       </div>
 
@@ -117,6 +128,7 @@ export function ExerciseLibrary() {
             exercise={exercise}
             onEdit={(ex) => setEditingExercise(ex)}
             onDelete={handleDelete}
+            onTapAdd={onTapAdd}
           />
         ))}
       </div>
