@@ -1,0 +1,58 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ExerciseCategory {
+  mobility
+  strengthening
+  cardio
+  balance
+  breathing
+}
+
+model Exercise {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  category        ExerciseCategory
+  description     String?
+  defaultSets     Int               @default(3)
+  defaultReps     Int               @default(10)
+  defaultDuration Int               @default(0) // 0 = reps mode, >0 = duration mode (seconds)
+  pathologies     String[]
+  tags            String[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  programExercises ProgramExercise[]
+}
+
+model Program {
+  id        String            @id @default(cuid())
+  title     String
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  exercises ProgramExercise[]
+}
+
+model ProgramExercise {
+  id         String   @id @default(cuid())
+  programId  String
+  exerciseId String
+  sets       Int      @default(3)
+  reps       Int?     // null when duration mode
+  duration   Int?     // null when reps mode — stored in seconds
+  order      Int      @default(0)
+  program    Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([programId])
+  @@index([exerciseId])
+}
