@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-display: "Instrument Serif", serif;
+    --font-body: "DM Sans", sans-serif;
+
+    /* Palette saumon */
+    --salmon-50: #fff4f2;
+    --salmon-100: #ffe6e1;
+    --salmon-200: #ffc9be;
+    --salmon-300: #ffa494;
+    --salmon-400: #ff7d6a;
+    --salmon-500: #f95c47;
+    --salmon-600: #e03a26;
+    --salmon-700: #bc2b1a;
+    --salmon-800: #9a2518;
+    --salmon-900: #7f231a;
+    --salmon-950: #450e09;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+}
+
+/* Drag ghost */
+.dragging-ghost {
+  opacity: 0.4;
+}
