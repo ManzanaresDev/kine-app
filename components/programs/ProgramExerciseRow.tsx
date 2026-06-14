@@ -54,10 +54,10 @@ export function ProgramExerciseRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "bg-white border border-stone-200 rounded-xl p-3 group",
+        "bg-salmon-50 border border-stone-200 rounded-xl p-3 group",
         "transition-shadow duration-150",
         isDragging
-          ? "opacity-40 shadow-2xl ring-2 ring-teal-500/30"
+          ? "opacity-40 shadow-2xl ring-2 ring-salmon-400/30"
           : "hover:shadow-sm hover:border-stone-300",
       )}
     >
@@ -77,20 +77,18 @@ export function ProgramExerciseRow({
           ))}
         </button>
 
-        {/* Main content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <span className="text-sm font-medium text-stone-900">
               {item.exercise.name}
             </span>
             {item.exercise.tags?.map((tag) => (
-              <Badge key={tag.id} color="stone">
+              <Badge key={tag.id} color="salmon">
                 {tag.name}
               </Badge>
             ))}
           </div>
 
-          {/* Controls row */}
           <div className="flex items-center flex-wrap gap-2">
             <label className="flex items-center gap-1.5">
               <span className="text-xs text-stone-500">Séries</span>
@@ -103,7 +101,7 @@ export function ProgramExerciseRow({
                   onUpdate({ sets: Math.max(1, Number(e.target.value)) })
                 }
                 className="w-14 px-2 py-1 text-sm text-center rounded-lg border border-stone-200 bg-stone-50
-                  focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent"
               />
             </label>
 
@@ -117,7 +115,7 @@ export function ProgramExerciseRow({
                   className={cn(
                     "px-2 py-1 text-[11px] font-medium transition-all",
                     mode === "reps"
-                      ? "bg-stone-800 text-white"
+                      ? "bg-salmon-500 text-white"
                       : "bg-white text-stone-500 hover:bg-stone-50",
                   )}
                 >
@@ -129,7 +127,7 @@ export function ProgramExerciseRow({
                   className={cn(
                     "px-2 py-1 text-[11px] font-medium transition-all border-l border-stone-200",
                     mode === "duration"
-                      ? "bg-stone-800 text-white"
+                      ? "bg-salmon-500 text-white"
                       : "bg-white text-stone-500 hover:bg-stone-50",
                   )}
                 >
@@ -147,7 +145,7 @@ export function ProgramExerciseRow({
                     onUpdate({ reps: Math.max(1, Number(e.target.value)) })
                   }
                   className="w-16 px-2 py-1 text-sm text-center rounded-lg border border-stone-200 bg-stone-50
-                    focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent"
                 />
               ) : (
                 <div className="flex items-center gap-1">
@@ -163,7 +161,7 @@ export function ProgramExerciseRow({
                       })
                     }
                     className="w-20 px-2 py-1 text-sm text-center rounded-lg border border-stone-200 bg-stone-50
-                      focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent"
                   />
                   <span className="text-xs text-stone-400">
                     = {formatDuration(item.duration ?? 30)}
@@ -174,7 +172,6 @@ export function ProgramExerciseRow({
           </div>
         </div>
 
-        {/* Remove */}
         <Button
           size="sm"
           variant="primary"

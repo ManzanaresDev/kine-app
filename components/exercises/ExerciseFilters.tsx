@@ -1,4 +1,4 @@
-//components/exercises/ExerciseFilters.tsx
+// src/components/exercises/ExerciseFilters.tsx
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -41,8 +41,8 @@ export function ExerciseFilters({
           placeholder="Rechercher un exercice…"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-stone-200 bg-white
-            focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent
+          className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-stone-200 bg-salmon-50
+            focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent
             placeholder:text-stone-400 transition-shadow"
         />
       </div>
@@ -54,8 +54,8 @@ export function ExerciseFilters({
           className={cn(
             "px-3 py-1 text-xs rounded-full border font-medium transition-all duration-150",
             selected === null
-              ? "bg-stone-800 text-white border-stone-800"
-              : "bg-white text-stone-600 border-stone-200 hover:border-stone-300 hover:bg-stone-50",
+              ? "bg-salmon-500 text-white border-salmon-500"
+              : "bg-salmon-200 text-stone-600 border-stone-200 hover:border-salmon-300 hover:text-salmon-600",
           )}
         >
           Tous
@@ -67,8 +67,8 @@ export function ExerciseFilters({
             className={cn(
               "px-3 py-1 text-xs rounded-full border font-medium transition-all duration-150 flex items-center gap-1.5",
               selected === cat
-                ? "bg-teal-600 text-white border-teal-600"
-                : "bg-white text-stone-600 border-stone-200 hover:border-stone-300 hover:bg-stone-50",
+                ? "bg-salmon-500 text-white border-salmon-500"
+                : "bg-salmon-200 text-stone-600 border-stone-200 hover:border-salmon-300 hover:text-salmon-600",
             )}
           >
             <span>{CATEGORY_ICONS[cat]}</span>

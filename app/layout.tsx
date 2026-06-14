@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="fr"
       className={`${instrumentSerif.variable} ${dmSans.variable}`}
     >
-      <body className="font-body bg-stone-50 text-stone-900 antialiased">
+      <body className="font-body bg-salmon-100 text-stone-900 antialiased">
         <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
           <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between">
             <a href="/exercises" className="flex items-center gap-2.5 group">

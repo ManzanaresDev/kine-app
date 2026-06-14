@@ -61,10 +61,7 @@ export default function ProgramDetailPage() {
     setItems((prev) => {
       const oldIndex = prev.findIndex((i) => i.localId === active.id)
       const newIndex = prev.findIndex((i) => i.localId === over.id)
-      return arrayMove(prev, oldIndex, newIndex).map((item, idx) => ({
-        ...item,
-        order: idx,
-      }))
+      return arrayMove(prev, oldIndex, newIndex).map((item, idx) => ({ ...item, order: idx }))
     })
   }
 
@@ -76,9 +73,7 @@ export default function ProgramDetailPage() {
 
   function handleRemoveItem(localId: string) {
     setItems((prev) =>
-      prev
-        .filter((item) => item.localId !== localId)
-        .map((item, idx) => ({ ...item, order: idx }))
+      prev.filter((item) => item.localId !== localId).map((item, idx) => ({ ...item, order: idx }))
     )
   }
 
@@ -158,7 +153,7 @@ export default function ProgramDetailPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2 font-display text-2xl text-stone-800 rounded-xl border border-transparent
-              hover:border-stone-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500
+              hover:border-stone-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-salmon-300
               bg-transparent hover:bg-white focus:bg-white transition-all"
           />
           <textarea
@@ -167,7 +162,7 @@ export default function ProgramDetailPage() {
             placeholder="Notes cliniques…"
             rows={2}
             className="w-full px-3 py-2 text-sm text-stone-600 rounded-xl border border-transparent
-              hover:border-stone-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500
+              hover:border-stone-200 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-salmon-300
               bg-transparent hover:bg-white focus:bg-white placeholder:text-stone-300 resize-none transition-all"
           />
         </div>
@@ -182,12 +177,7 @@ export default function ProgramDetailPage() {
           >
             {saved ? '✓ Sauvegardé' : saving ? 'Enregistrement…' : 'Sauvegarder'}
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleDownloadPDF}
-            disabled={pdfLoading}
-          >
+          <Button variant="secondary" size="sm" onClick={handleDownloadPDF} disabled={pdfLoading}>
             {pdfLoading ? '…' : '📄 PDF'}
           </Button>
           <Button variant="danger" size="sm" onClick={handleDelete}>
@@ -199,7 +189,7 @@ export default function ProgramDetailPage() {
       {/* Meta */}
       <p className="text-xs text-stone-400 mb-4">
         {items.length} exercice{items.length !== 1 ? 's' : ''} · Modifié le{' '}
-        {new Date(program.updatedAt).toLocaleDateString('fr-FR', {
+        {new Date(program.updated_at).toLocaleDateString('fr-FR', {
           day: '2-digit',
           month: 'long',
           year: 'numeric',
@@ -211,7 +201,7 @@ export default function ProgramDetailPage() {
         <div className="text-center py-16 border-2 border-dashed border-stone-200 rounded-2xl text-stone-400">
           <p className="font-medium">Aucun exercice dans ce programme</p>
           <p className="text-sm mt-1">
-            <a href="/exercises" className="text-teal-600 hover:underline">
+            <a href="/exercises" className="text-salmon-600 hover:text-salmon-700 hover:underline">
               Retournez à la bibliothèque
             </a>{' '}
             pour en ajouter
@@ -219,10 +209,7 @@ export default function ProgramDetailPage() {
         </div>
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={items.map((i) => i.localId)}
-            strategy={verticalListSortingStrategy}
-          >
+          <SortableContext items={items.map((i) => i.localId)} strategy={verticalListSortingStrategy}>
             <div className="space-y-2">
               {items.map((item) => (
                 <ProgramExerciseRow

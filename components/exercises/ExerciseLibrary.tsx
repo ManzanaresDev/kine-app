@@ -114,7 +114,7 @@ export function ExerciseLibrary({
           placeholder="Rechercher…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent"
+          className="w-full px-3 py-2 text-sm rounded-xl border bg-salmon-50 border-stone-200 focus:outline-none focus:ring-2 focus:ring-salmon-300 focus:border-transparent"
         />
 
         {/* TAGS */}
@@ -130,7 +130,7 @@ export function ExerciseLibrary({
                     "px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
                     active
                       ? "bg-salmon-500 text-white border-salmon-500"
-                      : "bg-white text-stone-500 border-stone-200 hover:border-salmon-300 hover:text-salmon-600",
+                      : "bg-salmon-200 text-stone-500 border-stone-200 hover:border-salmon-300 hover:text-salmon-600",
                   ].join(" ")}
                 >
                   {tag.name}

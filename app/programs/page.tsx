@@ -13,10 +13,7 @@ const fetcher = (url: string) =>
     .then((res) => (Array.isArray(res) ? res : (res.data ?? [])));
 
 export default function ProgramsPage() {
-  const { data: programs, mutate } = useSWR<Program[]>(
-    "/api/programs",
-    fetcher,
-  );
+  const { data: programs, mutate } = useSWR<Program[]>("/api/programs", fetcher);
   const [deleteTarget, setDeleteTarget] = useState<Program | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -63,9 +60,7 @@ export default function ProgramsPage() {
 
       {programs?.length === 0 && (
         <div className="text-center py-20 border-2 border-dashed border-stone-200 rounded-xl">
-          <p className="text-stone-500 font-medium">
-            Aucun programme sauvegardé
-          </p>
+          <p className="text-stone-500 font-medium">Aucun programme sauvegardé</p>
           <p className="text-stone-400 text-sm mt-1">
             Composez un programme depuis la bibliothèque d'exercices
           </p>
@@ -76,9 +71,9 @@ export default function ProgramsPage() {
         {programs?.map((program) => (
           <div
             key={program.id}
-            className="bg-white border border-stone-200 rounded-xl p-4 flex items-center justify-between gap-4"
+            className="bg-white border border-stone-200 rounded-xl p-4 flex items-center justify-between gap-4 hover:border-stone-300 transition-colors"
           >
-            <div>
+            <a href={`/programs/${program.id}`} className="flex-1 min-w-0">
               <h2 className="font-medium text-stone-900">{program.title}</h2>
               <p className="text-sm text-stone-500 mt-0.5">
                 {program.exercises.length} exercice
@@ -90,11 +85,9 @@ export default function ProgramsPage() {
                 })}
               </p>
               {program.notes && (
-                <p className="text-sm text-stone-400 mt-1 line-clamp-1">
-                  {program.notes}
-                </p>
+                <p className="text-sm text-stone-400 mt-1 line-clamp-1">{program.notes}</p>
               )}
-            </div>
+            </a>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => handleDownloadPDF(program.id, program.title)}
@@ -134,27 +127,15 @@ export default function ProgramsPage() {
               <p className="text-sm text-stone-500 mt-2">
                 Cette action est irréversible. Les{" "}
                 {deleteTarget?.exercises.length} exercice
-                {(deleteTarget?.exercises.length ?? 0) !== 1 ? "s" : ""} du
-                programme seront également supprimés.
+                {(deleteTarget?.exercises.length ?? 0) !== 1 ? "s" : ""} du programme seront également supprimés.
               </p>
             </div>
           </div>
-
           <div className="flex gap-2 justify-end pt-1">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            <Button variant="secondary" size="sm" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Annuler
             </Button>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleDeleteConfirm}
-              disabled={deleting}
-            >
+            <Button variant="danger" size="sm" onClick={handleDeleteConfirm} disabled={deleting}>
               {deleting ? "Suppression…" : "Supprimer définitivement"}
             </Button>
           </div>

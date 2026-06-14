@@ -29,7 +29,7 @@ export function ExerciseCard({
   return (
     <div
       className={cn(
-        "group bg-white border border-stone-200 rounded-xl p-3 select-none",
+        "group bg-salmon-50 border border-stone-200 rounded-xl p-3 select-none",
         "transition-all duration-150 hover:border-salmon-200 hover:shadow-sm",
       )}
     >

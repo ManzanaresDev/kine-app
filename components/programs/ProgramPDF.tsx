@@ -154,7 +154,7 @@ interface ProgramPDFDocumentProps {
 export function ProgramPDFDocument({
   program,
 }: ProgramPDFDocumentProps): ReactElement<DocumentProps> {
-  const date = new Date(program.updatedAt).toLocaleDateString("fr-FR", {
+  const date = new Date(program.updatedt).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
