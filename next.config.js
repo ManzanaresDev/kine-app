@@ -1,10 +1,11 @@
-// next.config.js
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Required for @react-pdf/renderer in Next.js App Router
-    serverComponentsExternalPackages: ["@react-pdf/renderer"],
+  serverExternalPackages: ["@react-pdf/renderer"],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals || []), "@react-pdf/renderer"];
+    }
+    return config;
   },
 };
 

@@ -3,6 +3,8 @@
 
 import { useState } from "react";
 import useSWR from "swr";
+import { pdf } from "@react-pdf/renderer";
+import { ProgramPDFDocument } from "@/components/programs/ProgramPDF";
 import type { Program } from "@/types";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -13,9 +15,30 @@ const fetcher = (url: string) =>
     .then((res) => (Array.isArray(res) ? res : (res.data ?? [])));
 
 export default function ProgramsPage() {
-  const { data: programs, mutate } = useSWR<Program[]>("/api/programs", fetcher);
+  const { data: programs, mutate } = useSWR<Program[]>(
+    "/api/programs",
+    fetcher,
+  );
   const [deleteTarget, setDeleteTarget] = useState<Program | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
+
+  async function handleDownloadPDF(program: Program) {
+    setPdfLoadingId(program.id);
+    try {
+      const blob = await pdf(<ProgramPDFDocument program={program} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `programme-${program.title.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setPdfLoadingId(null);
+    }
+  }
 
   async function handleDeleteConfirm() {
     if (!deleteTarget) return;
@@ -24,17 +47,6 @@ export default function ProgramsPage() {
     mutate();
     setDeleting(false);
     setDeleteTarget(null);
-  }
-
-  async function handleDownloadPDF(id: string, title: string) {
-    const res = await fetch(`/api/programs/${id}/pdf`);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `programme-${title.replace(/\s+/g, "-").toLowerCase()}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   return (
@@ -60,7 +72,9 @@ export default function ProgramsPage() {
 
       {programs?.length === 0 && (
         <div className="text-center py-20 border-2 border-dashed border-stone-200 rounded-xl">
-          <p className="text-stone-500 font-medium">Aucun programme sauvegardé</p>
+          <p className="text-stone-500 font-medium">
+            Aucun programme sauvegardé
+          </p>
           <p className="text-stone-400 text-sm mt-1">
             Composez un programme depuis la bibliothèque d'exercices
           </p>
@@ -85,15 +99,18 @@ export default function ProgramsPage() {
                 })}
               </p>
               {program.notes && (
-                <p className="text-sm text-stone-400 mt-1 line-clamp-1">{program.notes}</p>
+                <p className="text-sm text-stone-400 mt-1 line-clamp-1">
+                  {program.notes}
+                </p>
               )}
             </a>
             <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => handleDownloadPDF(program.id, program.title)}
-                className="px-3 py-1.5 text-xs rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors"
+                onClick={() => handleDownloadPDF(program)}
+                disabled={pdfLoadingId === program.id}
+                className="px-3 py-1.5 text-xs rounded-lg border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors disabled:opacity-50"
               >
-                PDF
+                {pdfLoadingId === program.id ? "…" : "PDF"}
               </button>
               <button
                 onClick={() => setDeleteTarget(program)}
@@ -106,7 +123,6 @@ export default function ProgramsPage() {
         ))}
       </div>
 
-      {/* Delete confirmation modal */}
       <Modal
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -127,15 +143,26 @@ export default function ProgramsPage() {
               <p className="text-sm text-stone-500 mt-2">
                 Cette action est irréversible. Les{" "}
                 {deleteTarget?.exercises.length} exercice
-                {(deleteTarget?.exercises.length ?? 0) !== 1 ? "s" : ""} du programme seront également supprimés.
+                {(deleteTarget?.exercises.length ?? 0) !== 1 ? "s" : ""} du
+                programme seront également supprimés.
               </p>
             </div>
           </div>
           <div className="flex gap-2 justify-end pt-1">
-            <Button variant="secondary" size="sm" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
               Annuler
             </Button>
-            <Button variant="danger" size="sm" onClick={handleDeleteConfirm} disabled={deleting}>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={deleting}
+            >
               {deleting ? "Suppression…" : "Supprimer définitivement"}
             </Button>
           </div>

@@ -27,6 +27,8 @@ export function ExerciseLibrary({
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Exercise | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const {
     data: exercises,
@@ -80,10 +82,13 @@ export function ExerciseLibrary({
     setEditingExercise(null);
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Supprimer cet exercice ?")) return;
-    await fetch(`/api/exercises/${id}`, { method: "DELETE" });
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    await fetch(`/api/exercises/${deleteTarget.id}`, { method: "DELETE" });
     mutate();
+    setDeleting(false);
+    setDeleteTarget(null);
   }
 
   return (
@@ -160,7 +165,9 @@ export function ExerciseLibrary({
             key={exercise.id}
             exercise={exercise}
             onEdit={(ex) => setEditingExercise(ex)}
-            onDelete={handleDelete}
+            onDelete={(id) =>
+              setDeleteTarget(exercises?.find((e) => e.id === id) ?? null)
+            }
             onTapAdd={onTapAdd}
           />
         ))}
@@ -191,6 +198,50 @@ export function ExerciseLibrary({
             onCancel={() => setEditingExercise(null)}
           />
         )}
+      </Modal>
+
+      {/* DELETE */}
+      <Modal
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Supprimer l'exercice"
+      >
+        <div className="space-y-5">
+          <div className="flex gap-3 items-start">
+            <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 text-lg shrink-0">
+              🗑
+            </div>
+            <div>
+              <p className="text-sm text-stone-700">
+                Vous êtes sur le point de supprimer l'exercice
+              </p>
+              <p className="font-semibold text-stone-900 mt-0.5">
+                « {deleteTarget?.name} »
+              </p>
+              <p className="text-sm text-stone-500 mt-2">
+                Cette action est irréversible.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end pt-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Suppression…" : "Supprimer définitivement"}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

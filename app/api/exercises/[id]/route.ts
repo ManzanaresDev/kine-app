@@ -89,13 +89,36 @@ export async function DELETE(
   _: Request,
   { params }: { params: { id: string } },
 ) {
-  // exercise_tags supprimés automatiquement par ON DELETE CASCADE
+  // 1. Supprimer les tags liés
+  const { error: tagsError } = await supabase
+    .from("exercise_tags")
+    .delete()
+    .eq("exercise_id", params.id);
+
+  if (tagsError) {
+    console.error("Erreur exercise_tags:", tagsError);
+    return NextResponse.json({ error: tagsError.message }, { status: 500 });
+  }
+
+  // 2. Supprimer les liaisons program_exercises
+  const { error: peError } = await supabase
+    .from("program_exercises")
+    .delete()
+    .eq("exercise_id", params.id);
+
+  if (peError) {
+    console.error("Erreur program_exercises:", peError);
+    return NextResponse.json({ error: peError.message }, { status: 500 });
+  }
+
+  // 3. Supprimer l'exercice
   const { error } = await supabase
     .from("exercises")
     .delete()
     .eq("id", params.id);
 
   if (error) {
+    console.error("Erreur exercises:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

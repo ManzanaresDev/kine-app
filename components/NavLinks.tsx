@@ -20,10 +20,10 @@ export function NavLinks() {
             key={href}
             href={href}
             className={cn(
-              "px-3 py-1.5 rounded-md text-sm transition-colors",
+              "px-3 py-1.5 rounded-md text-sm transition-colors border",
               isActive
-                ? "text-salmon-600 bg-salmon-50 font-medium"
-                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100",
+                ? "text-salmon-600 bg-salmon-50 border-salmon-600 font-medium"
+                : "text-stone-600 hover:text-stone-900 hover:bg-stone-100 border-transparent",
             )}
           >
             {label}

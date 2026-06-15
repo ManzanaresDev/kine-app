@@ -110,38 +110,47 @@ export function ProgramBuilder({
     }
   }
 
-  async function handleExportPDF() {
-    if (items.length === 0) return;
-    if (!title.trim()) {
-      alert("Donnez un nom au programme avant d'exporter");
-      return;
-    }
-    setPdfLoading(true);
-    try {
-      const programId = savedProgramId ?? (await saveProgram());
-      if (!programId) return;
-
-      const pdfRes = await fetch(`/api/programs/${programId}/pdf`);
-      if (!pdfRes.ok) return;
-
-      const blob = await pdfRes.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `programme-${title.trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setPdfLoading(false);
-    }
-  }
-
   const isEmpty = items.length === 0;
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="shrink-0 mb-4">
+        {/* Footer actions */}
+        <div className="shrink-0 mt-4 mb-2 pt-4 border-t border-stone-100 flex items-center gap-3">
+          <div className="flex-1">
+            <span className="relative inline-flex">
+              <Dumbbell
+                size={22}
+                strokeWidth={1.75}
+                className="text-stone-400"
+              />
+              {items.length > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-salmon-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {items.length}
+                </span>
+              )}
+            </span>
+          </div>
+
+          {items.length > 0 && (
+            <>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSave}
+                disabled={saving || items.length === 0}
+                className={cn(saved && "!bg-emerald-600")}
+              >
+                {saved
+                  ? "✓ Sauvegardé !"
+                  : saving
+                    ? "Enregistrement…"
+                    : "Sauvegarder"}
+              </Button>
+            </>
+          )}
+        </div>
         <h2 className="font-display text-xl text-stone-800 mb-3">
           Programme en cours
         </h2>
@@ -189,46 +198,6 @@ export function ProgramBuilder({
               </div>
             </SortableContext>
           </DndContext>
-        )}
-      </div>
-
-      {/* Footer actions */}
-      <div className="shrink-0 mt-4 pt-4 border-t border-stone-100 flex items-center gap-3">
-        <div className="flex-1">
-          <span className="relative inline-flex">
-            <Dumbbell size={22} strokeWidth={1.75} className="text-stone-400" />
-            {items.length > 0 && (
-              <span className="absolute -top-1.5 -right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-salmon-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {items.length}
-              </span>
-            )}
-          </span>
-        </div>
-
-        {items.length > 0 && (
-          <>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleExportPDF}
-              disabled={pdfLoading}
-            >
-              {pdfLoading ? "…" : "📄 PDF"}
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleSave}
-              disabled={saving || items.length === 0}
-              className={cn(saved && "!bg-emerald-600")}
-            >
-              {saved
-                ? "✓ Sauvegardé !"
-                : saving
-                  ? "Enregistrement…"
-                  : "Sauvegarder"}
-            </Button>
-          </>
         )}
       </div>
     </div>

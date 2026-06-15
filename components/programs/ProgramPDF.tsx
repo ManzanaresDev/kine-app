@@ -1,10 +1,17 @@
 // components/programs/ProgramPDF.tsx
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+} from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
 import type { Program } from "@/types";
-import { CATEGORY_LABELS } from "@/types";
 import { formatDuration } from "@/lib/utils";
+import logoSrc from "@/public/logo.png";
 
 const styles = StyleSheet.create({
   page: {
@@ -15,6 +22,75 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
+  // ── Page de garde ──────────────────────────────────────
+  coverPage: {
+    fontFamily: "Helvetica",
+    padding: 64,
+    backgroundColor: "#ffffff",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  coverLogo: {
+    width: 44,
+    height: 44,
+    marginBottom: 12,
+  },
+
+  coverTitle: {
+    fontSize: 18,
+    fontFamily: "Helvetica-Bold",
+    color: "#1c1917",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+
+  coverSubtitle: {
+    fontSize: 11,
+    color: "#78716c",
+    textAlign: "center",
+    marginBottom: 48,
+  },
+
+  coverDivider: {
+    width: 48,
+    height: 2,
+    backgroundColor: "#0d9488",
+    marginBottom: 48,
+  },
+
+  coverAlertBox: {
+    backgroundColor: "#fff7ed",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#fed7aa",
+    padding: 20,
+    maxWidth: 400,
+    marginBottom: 16,
+  },
+
+  coverAlertText: {
+    fontSize: 12,
+    color: "#9a3412",
+    textAlign: "center",
+    lineHeight: 1.7,
+  },
+
+  coverAppName: {
+    fontSize: 20,
+    fontFamily: "Helvetica-Bold",
+    color: "#1c1917", // ← noir au lieu de teal
+    marginBottom: 48,
+  },
+
+  appName: {
+    fontSize: 14,
+    fontFamily: "Helvetica-Bold",
+    color: "#1c1917", // ← noir au lieu de teal
+  },
+
+  // ── Page exercices ──────────────────────────────────────
   header: {
     marginBottom: 28,
     paddingBottom: 16,
@@ -32,15 +108,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 20,
     height: 20,
-    backgroundColor: "#0d9488",
-    borderRadius: 4,
     marginRight: 8,
-  },
-
-  appName: {
-    fontSize: 14,
-    fontFamily: "Helvetica-Bold",
-    color: "#0d9488",
   },
 
   title: {
@@ -101,7 +169,6 @@ const styles = StyleSheet.create({
 
   colIndex: { width: 24, flexShrink: 0 },
   colName: { flex: 1 },
-  colCategory: { width: 80, flexShrink: 0 },
   colSets: { width: 50, flexShrink: 0 },
   colParam: { width: 70, flexShrink: 0 },
 
@@ -116,16 +183,6 @@ const styles = StyleSheet.create({
     color: "#78716c",
     marginTop: 2,
     lineHeight: 1.4,
-  },
-
-  categoryBadge: {
-    fontSize: 8,
-    color: "#0d9488",
-    backgroundColor: "#f0fdfa",
-    borderRadius: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    alignSelf: "flex-start",
   },
 
   footer: {
@@ -154,7 +211,7 @@ interface ProgramPDFDocumentProps {
 export function ProgramPDFDocument({
   program,
 }: ProgramPDFDocumentProps): ReactElement<DocumentProps> {
-  const date = new Date(program.updatedt).toLocaleDateString("fr-FR", {
+  const date = new Date(program.updated_at).toLocaleDateString("fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -163,13 +220,51 @@ export function ProgramPDFDocument({
   const truncate = (text: string, max = 120) =>
     text.length > max ? text.slice(0, max) + "..." : text;
 
+  const logoUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}${logoSrc.src}`
+      : logoSrc.src;
+
   return (
     <Document>
+      {/* ── Page de garde ── */}
+      <Page size="A4" style={styles.coverPage}>
+        <Image src={logoUrl} style={styles.coverLogo} />
+
+        <Text style={styles.coverAppName}>KinéPlan</Text>
+
+        <Text style={styles.coverTitle}>{program.title}</Text>
+        <Text style={styles.coverSubtitle}>
+          {program.exercises.length} exercice
+          {program.exercises.length !== 1 ? "s" : ""} · {date}
+        </Text>
+
+        <View style={styles.coverDivider} />
+
+        <View style={styles.coverAlertBox}>
+          <Text style={styles.coverAlertText}>
+            Les exercices suivants vous ont été proposés en fonction de votre
+            prescription médicale, de vos antécédents et de votre état de santé
+            actuel. Nous vous remercions de ne pas les partager avec d'autres
+            personnes.
+          </Text>
+        </View>
+
+        <View style={styles.coverAlertBox}>
+          <Text style={styles.coverAlertText}>
+            Réalisez les exercices en respectant les consignes indiquées. Si
+            pendant la réalisation des exercices, vous ressentez une
+            augmentation de la douleur ou l'apparition spontanée d'une douleur,
+            arrêtez immédiatement les exercices.
+          </Text>
+        </View>
+      </Page>
+
+      {/* ── Page exercices ── */}
       <Page size="A4" style={styles.page}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={styles.logo} />
+            <Image src={logoUrl} style={styles.logo} />
             <Text style={styles.appName}>KinéPlan</Text>
           </View>
 
@@ -183,18 +278,13 @@ export function ProgramPDFDocument({
           {program.notes && <Text style={styles.notes}>{program.notes}</Text>}
         </View>
 
-        {/* Table */}
         <View style={styles.table}>
-          {/* Header */}
           <View style={styles.tableHeader}>
             <View style={styles.colIndex}>
               <Text style={styles.tableHeaderText}>#</Text>
             </View>
             <View style={styles.colName}>
               <Text style={styles.tableHeaderText}>Exercice</Text>
-            </View>
-            <View style={styles.colCategory}>
-              <Text style={styles.tableHeaderText}>Catégorie</Text>
             </View>
             <View style={styles.colSets}>
               <Text style={styles.tableHeaderText}>Séries</Text>
@@ -204,7 +294,6 @@ export function ProgramPDFDocument({
             </View>
           </View>
 
-          {/* Rows */}
           {program.exercises.map((pe, idx) => {
             const rowStyle =
               idx % 2 === 1
@@ -215,10 +304,7 @@ export function ProgramPDFDocument({
               <View key={pe.id} style={rowStyle}>
                 <View style={styles.colIndex}>
                   <Text
-                    style={{
-                      fontFamily: "Helvetica-Bold",
-                      color: "#a8a29e",
-                    }}
+                    style={{ fontFamily: "Helvetica-Bold", color: "#a8a29e" }}
                   >
                     {idx + 1}
                   </Text>
@@ -226,18 +312,11 @@ export function ProgramPDFDocument({
 
                 <View style={styles.colName}>
                   <Text style={styles.exerciseName}>{pe.exercise.name}</Text>
-
                   {pe.exercise.description && (
                     <Text style={styles.exerciseDesc}>
                       {truncate(pe.exercise.description)}
                     </Text>
                   )}
-                </View>
-
-                <View style={styles.colCategory}>
-                  <Text style={styles.categoryBadge}>
-                    {CATEGORY_LABELS[pe.exercise.category]}
-                  </Text>
                 </View>
 
                 <View style={styles.colSets}>
@@ -271,17 +350,14 @@ export function ProgramPDFDocument({
           })}
         </View>
 
-        {/* Footer */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>KinéPlan</Text>
-
           <Text
             style={styles.footerText}
             render={({ pageNumber, totalPages }) =>
               `Page ${pageNumber} / ${totalPages}`
             }
           />
-
           <Text style={styles.footerText}>{date}</Text>
         </View>
       </Page>

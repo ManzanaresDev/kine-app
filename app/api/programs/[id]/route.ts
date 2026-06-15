@@ -1,127 +1,56 @@
-// app/api/programs/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { z } from "zod";
+import { generateProgramPDF } from "@/lib/pdf/generateProgramPDF";
 
-const ProgramExerciseInput = z.object({
-  exerciseId: z.string(),
-  sets: z.number().int().min(1).default(3),
-  reps: z.number().int().min(0).nullable().default(null),
-  duration: z.number().int().min(0).nullable().default(null),
-  order: z.number().int().min(0).default(0),
-});
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ programId: string }> },
+) {
+  const { programId } = await params;
 
-const UpdateProgramSchema = z.object({
-  title: z.string().min(1).optional(),
-  notes: z.string().optional().nullable(),
-  exercises: z.array(ProgramExerciseInput).optional(),
-});
-
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const { data: program, error } = await supabase
+  const { data: program, error: programError } = await supabase
     .from("programs")
-    .select(`*, exercises:program_exercises (*, exercise:exercises (*))`)
-    .eq("id", params.id)
-    .order("order_index", {
-      referencedTable: "program_exercises",
-      ascending: true,
-    })
+    .select("id, title, notes, created_at")
+    .eq("id", programId)
     .single();
 
-  if (error || !program) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (programError || !program) {
+    return NextResponse.json(
+      { error: "Programme introuvable" },
+      { status: 404 },
+    );
   }
 
-  return NextResponse.json(program);
-}
+  const { data: programExercises, error: exError } = await supabase
+    .from("program_exercises")
+    .select(
+      `
+      order, sets, reps, duration,
+      exercises ( id, name, description, body_part, category )
+    `,
+    )
+    .eq("program_id", programId)
+    .order("order", { ascending: true });
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
-  try {
-    const body = await request.json();
-    const data = UpdateProgramSchema.parse(body);
-
-    if (data.exercises !== undefined) {
-      const { error: deleteError } = await supabase
-        .from("program_exercises")
-        .delete()
-        .eq("program_id", params.id); // ✅ snake_case
-
-      if (deleteError) {
-        return NextResponse.json(
-          { error: deleteError.message },
-          { status: 500 },
-        );
-      }
-
-      if (data.exercises.length > 0) {
-        const { error: insertError } = await supabase
-          .from("program_exercises")
-          .insert(
-            data.exercises.map((e) => ({
-              program_id: params.id, // ✅ snake_case
-              exercise_id: e.exerciseId, // ✅ snake_case
-              sets: e.sets,
-              reps: e.reps,
-              duration: e.duration,
-              order_index: e.order, // ✅ snake_case
-            })),
-          );
-
-        if (insertError) {
-          return NextResponse.json(
-            { error: insertError.message },
-            { status: 500 },
-          );
-        }
-      }
-    }
-
-    const updateFields = {
-      ...(data.title !== undefined ? { title: data.title } : {}),
-      ...(data.notes !== undefined ? { notes: data.notes } : {}),
-    };
-
-    if (Object.keys(updateFields).length > 0) {
-      const { error: updateError } = await supabase
-        .from("programs")
-        .update(updateFields)
-        .eq("id", params.id);
-
-      if (updateError) {
-        return NextResponse.json(
-          { error: updateError.message },
-          { status: 500 },
-        );
-      }
-    }
-
-    const { data: program, error: fetchError } = await supabase
-      .from("programs")
-      .select(`*, exercises:program_exercises (*, exercise:exercises (*))`)
-      .eq("id", params.id)
-      .order("order_index", {
-        referencedTable: "program_exercises",
-        ascending: true,
-      })
-      .single();
-
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
-    }
-
-    return NextResponse.json(program);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
-    }
+  if (exError) {
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Erreur chargement exercices" },
       { status: 500 },
     );
   }
+
+  const pdfBytes = await generateProgramPDF({
+    program,
+    exercises: (programExercises ?? []) as any[],
+  });
+
+  return new NextResponse(Buffer.from(pdfBytes), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="programme-${programId}.pdf"`,
+    },
+  });
 }
 
 export async function DELETE(
@@ -137,5 +66,5 @@ export async function DELETE(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return new NextResponse(null, { status: 204 });
 }
