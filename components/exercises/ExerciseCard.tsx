@@ -72,7 +72,7 @@ export function ExerciseCard({
                   <Button
                     size="sm"
                     variant="primary"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       onTapAdd(exercise);
                     }}
