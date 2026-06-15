@@ -34,7 +34,7 @@ export async function generateProgramPDF({
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  let page = pdfDoc.addPage([595, 842]); // A4
+  let page = pdfDoc.addPage([595, 842]);
   const { width } = page.getSize();
   let y = 842 - 50;
 
@@ -54,7 +54,6 @@ export async function generateProgramPDF({
   ) => {
     checkNewPage();
     page.drawText(text.slice(0, 100), {
-      // sécurité longueur
       x,
       y,
       size,
@@ -88,9 +87,9 @@ export async function generateProgramPDF({
   y -= 20;
 
   // ── Exercises ────────────────────────────────────────
-  for (const [idx, item] of exercises.entries()) {
+  exercises.forEach((item, idx) => {
     const ex = item.exercises;
-    if (!ex) continue;
+    if (!ex) return; // ✅ return au lieu de continue dans forEach
 
     checkNewPage();
 
@@ -123,7 +122,7 @@ export async function generateProgramPDF({
       color: rgb(0.95, 0.96, 0.96),
     });
     y -= 16;
-  }
+  }); // ✅ fermeture correcte du forEach
 
   // ── Footer ───────────────────────────────────────────
   page.drawText(`kine-app · ${exercises.length} exercice(s)`, {

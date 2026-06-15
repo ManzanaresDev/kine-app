@@ -6,7 +6,7 @@ import { getTagNames } from "@/services/tags.service";
 
 const ALL_CATEGORIES = Object.keys(getTagNames());
 
-const CATEGORY_ICONS: Record<ExerciseCategory, string> = {
+const CATEGORY_ICONS: Record<string, string> = {
   genou: "🦵",
   hanche: "🦴",
   colonne: "🧍",
@@ -16,10 +16,20 @@ const CATEGORY_ICONS: Record<ExerciseCategory, string> = {
   respiratoire: "🫁",
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  genou: "Genou",
+  hanche: "Hanche",
+  colonne: "Colonne",
+  equilibre: "Équilibre",
+  marche: "Marche",
+  renforcement: "Renforcement",
+  respiratoire: "Respiratoire",
+};
+
 interface ExerciseFiltersProps {
-  selected: ExerciseCategory | null;
+  selected: string | null;
   search: string;
-  onCategoryChange: (cat: ExerciseCategory | null) => void;
+  onCategoryChange: (cat: string | null) => void;
   onSearchChange: (value: string) => void;
 }
 
