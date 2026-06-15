@@ -32,7 +32,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return NextResponse.json({
     ...exercise,
     tags: exercise.tags.map(
-      (t: { tag: { id: string; name: string; slug: string } }) => t.tag,
+tags: exercise.tags.map((t: any) => t.tag),
     ),
   });
 }
