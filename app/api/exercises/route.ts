@@ -36,14 +36,7 @@ export async function GET() {
 
   const normalized = (data ?? []).map((ex) => ({
     ...ex,
-    tags: (ex.exercise_tags ?? [])
-      .map(
-        (et: {
-          tag_id: string;
-          tags: { id: string; name: string; slug: string } | null;
-        }) => et.tags,
-      )
-      .filter(Boolean),
+    tags: (ex.exercise_tags ?? []).map((et: any) => et.tags).filter(Boolean),
     exercise_tags: undefined,
   }));
 
