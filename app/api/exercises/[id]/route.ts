@@ -31,9 +31,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
   return NextResponse.json({
     ...exercise,
-    tags: exercise.tags.map(
-tags: exercise.tags.map((t: any) => t.tag),
-    ),
+    tags: exercise.tags.map((t: any) => t.tag),
   });
 }
 
@@ -45,7 +43,6 @@ export async function PUT(
     const body = await request.json();
     const { tag_ids, ...fields } = UpdateSchema.parse(body);
 
-    // 1. Mettre à jour les champs scalaires
     const { data: exercise, error } = await supabase
       .from("exercises")
       .update(fields)
@@ -57,7 +54,6 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // 2. Remplacer les tags si fournis
     if (tag_ids !== undefined) {
       await supabase
         .from("exercise_tags")
@@ -89,7 +85,6 @@ export async function DELETE(
   _: Request,
   { params }: { params: { id: string } },
 ) {
-  // 1. Supprimer les tags liés
   const { error: tagsError } = await supabase
     .from("exercise_tags")
     .delete()
@@ -100,7 +95,6 @@ export async function DELETE(
     return NextResponse.json({ error: tagsError.message }, { status: 500 });
   }
 
-  // 2. Supprimer les liaisons program_exercises
   const { error: peError } = await supabase
     .from("program_exercises")
     .delete()
@@ -111,7 +105,6 @@ export async function DELETE(
     return NextResponse.json({ error: peError.message }, { status: 500 });
   }
 
-  // 3. Supprimer l'exercice
   const { error } = await supabase
     .from("exercises")
     .delete()
