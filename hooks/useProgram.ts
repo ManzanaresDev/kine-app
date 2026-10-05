@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { fetcher } from "../lib/fetcher";
 
 export type Program = {
   id: string;
@@ -14,16 +14,16 @@ export const usePrograms = () => {
 
   const fetchPrograms = async () => {
     setLoading(true);
+    setError(null);
 
-    const { data, error } = await supabase.from("programs").select("*");
-
-    if (error) {
-      setError(error.message);
-    } else {
-      setPrograms(data || []);
+    try {
+      const data = await fetcher<Program[]>("/api/programs");
+      setPrograms(data ?? []);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur inconnue");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -31,29 +31,18 @@ export const usePrograms = () => {
   }, []);
 
   const createProgram = async (program: Omit<Program, "id">) => {
-    const { data, error } = await supabase
-      .from("programs")
-      .insert([
-        {
-          id: crypto.randomUUID(),
-          ...program,
-        },
-      ])
-      .select()
-      .single();
+    // L'id est généré côté serveur
+    const created = await fetcher<Program>("/api/programs", {
+      method: "POST",
+      body: JSON.stringify(program),
+    });
 
-    if (error) throw error;
-
-    setPrograms((prev) => [...prev, data]);
-
-    return data;
+    setPrograms((prev) => [created, ...prev]);
+    return created;
   };
 
   const deleteProgram = async (id: string) => {
-    const { error } = await supabase.from("programs").delete().eq("id", id);
-
-    if (error) throw error;
-
+    await fetcher(`/api/programs/${id}`, { method: "DELETE" });
     setPrograms((prev) => prev.filter((p) => p.id !== id));
   };
 

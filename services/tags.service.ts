@@ -1,13 +1,11 @@
-// src/services/tags.service.ts
-import { supabase } from "@/lib/supabase";
+import { fetcher } from "@/lib/fetcher";
 
-export async function getTagNames() {
-  const { data, error } = await supabase.from("tags").select("name");
-
-  if (error) {
+export async function getTagNames(): Promise<string[]> {
+  try {
+    const tags = await fetcher<{ name: string }[]>("/api/tags");
+    return tags.map((tag) => tag.name);
+  } catch (error) {
     console.error(error);
     return [];
   }
-
-  return data?.map((tag) => tag.name) ?? [];
 }

@@ -1,12 +1,14 @@
-// src/app/programs/[id]/page.tsx
+// app/programs/[id]/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import useSWR from 'swr'
+import { pdf } from '@react-pdf/renderer'
 import type { Program, ProgramExerciseLocal } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { ProgramExerciseRow } from '@/components/programs/ProgramExerciseRow'
+import { ProgramPDFDocument } from '@/components/programs/ProgramPDF'
 import {
   DndContext,
   PointerSensor,
@@ -20,29 +22,15 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json())
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.json()
+  })
 
 export default function ProgramDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-
-  const { data: program, mutate } = useSWR<Program>(`/api/programs/${id}`, fetcher, {
-    onSuccess: (data) => {
-      setTitle(data.title)
-      setNotes(data.notes ?? '')
-      setItems(
-        data.exercises.map((pe) => ({
-          localId: pe.id,
-          exerciseId: pe.exerciseId,
-          exercise: pe.exercise,
-          sets: pe.sets,
-          reps: pe.reps,
-          duration: pe.duration,
-          order: pe.order,
-        }))
-      )
-    },
-  })
 
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
@@ -50,6 +38,28 @@ export default function ProgramDetailPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+
+  const { data: program, error, mutate } = useSWR<Program>(
+    `/api/programs/${id}`,
+    fetcher,
+    {
+      onSuccess: (data) => {
+        setTitle(data.title)
+        setNotes(data.notes ?? '')
+        setItems(
+          data.exercises.map((pe) => ({
+            localId: pe.id,
+            exerciseId: pe.exerciseId,
+            exercise: pe.exercise,
+            sets: pe.sets,
+            reps: pe.reps,
+            duration: pe.duration,
+            order: pe.order,
+          }))
+        )
+      },
+    }
+  )
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -81,7 +91,7 @@ export default function ProgramDetailPage() {
     if (!title.trim()) return
     setSaving(true)
     try {
-      await fetch(`/api/programs/${id}`, {
+      const res = await fetch(`/api/programs/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,9 +106,13 @@ export default function ProgramDetailPage() {
           })),
         }),
       })
+      if (!res.ok) throw new Error('Sauvegarde échouée')
       mutate()
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    } catch (e) {
+      console.error(e)
+      alert('Échec de la sauvegarde')
     } finally {
       setSaving(false)
     }
@@ -106,24 +120,57 @@ export default function ProgramDetailPage() {
 
   async function handleDelete() {
     if (!confirm('Supprimer définitivement ce programme ?')) return
-    await fetch(`/api/programs/${id}`, { method: 'DELETE' })
-    router.push('/programs')
+    try {
+      const res = await fetch(`/api/programs/${id}`, { method: 'DELETE' })
+      if (!res.ok && res.status !== 404) throw new Error('Suppression échouée')
+      router.push('/programs')
+    } catch (e) {
+      console.error(e)
+      alert('Échec de la suppression')
+    }
   }
 
   async function handleDownloadPDF() {
+    if (!program) return
     setPdfLoading(true)
     try {
-      const res = await fetch(`/api/programs/${id}/pdf`)
-      const blob = await res.blob()
+      const current = {
+        ...program,
+        title,
+        notes,
+        exercises: items.map((item, idx) => ({
+          id: item.localId,
+          exerciseId: item.exerciseId,
+          exercise: item.exercise,
+          sets: item.sets,
+          reps: item.reps,
+          duration: item.duration,
+          order: idx,
+        })),
+      }
+      const blob = await pdf(<ProgramPDFDocument program={current as any} />).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `programme-${title.replace(/\s+/g, '-').toLowerCase()}.pdf`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error(e)
+      alert('Échec de la génération du PDF')
     } finally {
       setPdfLoading(false)
     }
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-red-500">
+        Impossible de charger le programme ({error.message})
+      </div>
+    )
   }
 
   if (!program) {

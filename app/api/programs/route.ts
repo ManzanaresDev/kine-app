@@ -1,6 +1,5 @@
-// app/api/programs/route.ts
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { sql } from "@/lib/db";
 import { z } from "zod";
 
 const ProgramExerciseInput = z.object({
@@ -17,29 +16,35 @@ const CreateProgramSchema = z.object({
   exercises: z.array(ProgramExerciseInput).default([]),
 });
 
+// Un seul aller-retour : programmes + program_exercises + exercise imbriqué
+// Si id est null → tous les programmes, sinon un seul
+async function fetchPrograms(id: string | null = null) {
+  return sql`
+    SELECT
+      p.*,
+      COALESCE(
+        jsonb_agg(
+          to_jsonb(pe) || jsonb_build_object('exercise', to_jsonb(e))
+          ORDER BY pe.order_index
+        ) FILTER (WHERE pe.program_id IS NOT NULL),
+        '[]'::jsonb
+      ) AS exercises
+    FROM programs p
+    LEFT JOIN program_exercises pe ON pe.program_id = p.id
+    LEFT JOIN exercises e ON e.id = pe.exercise_id
+ WHERE (${id}::text IS NULL OR p.id::text = ${id}::text)
+    GROUP BY p.id
+    ORDER BY p.updated_at DESC
+  `;
+}
+
 export async function GET() {
-  const { data: programs, error } = await supabase
-    .from("programs")
-    .select(
-      `
-      *,
-      exercises:program_exercises (
-        *,
-        exercise:exercises (*)
-      )
-    `,
-    )
-    .order("updated_at", { ascending: false })
-    .order("order_index", {
-      referencedTable: "program_exercises",
-      ascending: true,
-    });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    return NextResponse.json(await fetchPrograms());
+  } catch (error) {
+    console.error("GET /api/programs", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  return NextResponse.json(programs);
 }
 
 export async function POST(request: Request) {
@@ -47,69 +52,31 @@ export async function POST(request: Request) {
     const body = await request.json();
     const data = CreateProgramSchema.parse(body);
 
-    const { data: program, error: programError } = await supabase
-      .from("programs")
-      .insert({ title: data.title, notes: data.notes })
-      .select()
-      .single();
+    const id = crypto.randomUUID();
 
-    if (programError) {
-      return NextResponse.json(
-        { error: programError.message },
-        { status: 500 },
-      );
-    }
-
-    if (data.exercises.length > 0) {
-      const { error: exError } = await supabase
-        .from("program_exercises")
-        .insert(
-          data.exercises.map((e) => ({
-            program_id: program.id,
-            exercise_id: e.exerciseId,
-            sets: e.sets,
-            reps: e.reps,
-            duration: e.duration,
-            order_index: e.order,
-          })),
-        );
-
-      if (exError) {
-        await supabase.from("programs").delete().eq("id", program.id);
-        return NextResponse.json({ error: exError.message }, { status: 500 });
-      }
-    }
-
-    const { data: fullProgram, error: fetchError } = await supabase
-      .from("programs")
-      .select(
-        `
-        *,
-        exercises:program_exercises (
-          *,
-          exercise:exercises (*)
-        )
+    // Transaction : tout est inséré ou rien (plus besoin du rollback manuel)
+    await sql.transaction([
+      sql`
+        INSERT INTO programs (id, title, notes)
+        VALUES (${id}, ${data.title}, ${data.notes ?? null})
       `,
-      )
-      .eq("id", program.id)
-      .order("order_index", {
-        referencedTable: "program_exercises",
-        ascending: true,
-      })
-      .single();
+      ...data.exercises.map(
+        (e) => sql`
+          INSERT INTO program_exercises
+            (program_id, exercise_id, sets, reps, duration, order_index)
+          VALUES
+            (${id}, ${e.exerciseId}, ${e.sets}, ${e.reps}, ${e.duration}, ${e.order})
+        `,
+      ),
+    ]);
 
-    if (fetchError) {
-      return NextResponse.json({ error: fetchError.message }, { status: 500 });
-    }
-
+    const [fullProgram] = await fetchPrograms(id);
     return NextResponse.json(fullProgram, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("POST /api/programs", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

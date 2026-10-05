@@ -1,6 +1,7 @@
-// app/api/exercises/route.ts
+// api/api/exercises/route.ts
+
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { sql } from "@/lib/db";
 import { z } from "zod";
 
 const ExerciseSchema = z.object({
@@ -13,71 +14,58 @@ const ExerciseSchema = z.object({
 });
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("exercises")
-    .select(
-      `
-    id,
-    name,
-    description,
-    default_sets,
-    default_reps,
-    default_duration,
-    created_at,
-    updated_at,
-    exercise_tags(tag_id, tags(id, name, slug))
-  `,
-    )
-    .order("name");
+  try {
+    const data = await sql`
+      SELECT
+        e.id, e.name, e.description,
+        e.default_sets, e.default_reps, e.default_duration,
+        e.created_at, e.updated_at,
+        COALESCE(
+          jsonb_agg(
+            jsonb_build_object('id', t.id, 'name', t.name, 'slug', t.slug)
+            ORDER BY t.name
+          ) FILTER (WHERE t.id IS NOT NULL),
+          '[]'::jsonb
+        ) AS tags
+      FROM exercises e
+      LEFT JOIN exercise_tags et ON et.exercise_id = e.id
+      LEFT JOIN tags t ON t.id = et.tag_id
+      GROUP BY e.id
+      ORDER BY e.name
+    `;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ data, error: null });
+  } catch (error) {
+    console.error("GET /api/exercises", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const normalized = (data ?? []).map((ex) => ({
-    ...ex,
-    tags: (ex.exercise_tags ?? []).map((et: any) => et.tags).filter(Boolean),
-    exercise_tags: undefined,
-  }));
-
-  return NextResponse.json({ data: normalized, error: null });
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tag_ids, ...fields } = ExerciseSchema.parse(body);
+    const { tag_ids, ...f } = ExerciseSchema.parse(body);
 
-    const { data: exercise, error } = await supabase
-      .from("exercises")
-      .insert(fields)
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (tag_ids.length > 0) {
-      const { error: tagError } = await supabase
-        .from("exercise_tags")
-        .insert(
-          tag_ids.map((tag_id) => ({ exercise_id: exercise.id, tag_id })),
-        );
-
-      if (tagError) {
-        return NextResponse.json({ error: tagError.message }, { status: 500 });
-      }
-    }
+    // Une seule requête (donc atomique) : insert de l'exercice + de ses tags
+    const [exercise] = await sql`
+      WITH new_ex AS (
+        INSERT INTO exercises (name, description, default_sets, default_reps, default_duration)
+        VALUES (${f.name}, ${f.description ?? null}, ${f.default_sets}, ${f.default_reps}, ${f.default_duration})
+        RETURNING *
+      ),
+      ins AS (
+        INSERT INTO exercise_tags (exercise_id, tag_id)
+        SELECT new_ex.id, unnest(${tag_ids}::text[]) FROM new_ex
+      )
+      SELECT * FROM new_ex
+    `;
 
     return NextResponse.json({ ...exercise, tags: [] }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error("POST /api/exercises", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
