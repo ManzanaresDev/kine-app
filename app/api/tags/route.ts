@@ -1,6 +1,6 @@
 // app/api/tags/route.ts
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { sql } from "@/lib/db";
 import { z } from "zod";
 
 const TagSchema = z.object({
@@ -24,22 +24,28 @@ function toSlug(name: string): string {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search");
+  try {
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
 
-  let query = supabase.from("tags").select("id, name, slug").order("name");
+    const tags = search
+      ? await sql`
+          SELECT id, name, slug
+          FROM tags
+          WHERE name ILIKE ${`%${search}%`}
+          ORDER BY name
+        `
+      : await sql`
+          SELECT id, name, slug
+          FROM tags
+          ORDER BY name
+        `;
 
-  if (search) {
-    query = query.ilike("name", `%${search}%`);
+    return NextResponse.json(tags);
+  } catch (error) {
+    console.error("GET /api/tags", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const { data, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data ?? []);
 }
 
 export async function POST(request: Request) {
@@ -49,22 +55,20 @@ export async function POST(request: Request) {
 
     const finalSlug = slug ?? toSlug(name);
 
-    // Upsert : retourne le tag existant si le slug existe déjà
-    const { data: tag, error } = await supabase
-      .from("tags")
-      .upsert({ name, slug: finalSlug }, { onConflict: "slug" })
-      .select()
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    // Upsert : si le slug existe déjà, on met à jour le nom et on renvoie la ligne
+    const [tag] = await sql`
+      INSERT INTO tags (name, slug)
+      VALUES (${name}, ${finalSlug})
+      ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name
+      RETURNING *
+    `;
 
     return NextResponse.json(tag, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 });
+      return NextResponse.json({ error: error.issues }, { status: 400 });
     }
+    console.error("POST /api/tags", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
